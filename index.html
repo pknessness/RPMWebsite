@@ -1,0 +1,66 @@
+<html>
+  <style>
+    body {
+       background-color: rgb(192,192,192);
+    }
+  </style>
+    <head>
+    <!-- <meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> -->
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="static/stylesheet.css" />
+    <link rel="icon" href="VirtualLabLogo.png">
+  </head>
+  <title>Centrifuge Control Interface</title>
+  <body>
+    <div class="title-bar">
+      <div class="title-bar-text">
+          Centrifuge Control Interface
+      </div>
+      <div class="title-bar-controls">
+        <button aria-label="Help" onclick="alert('MOPED MOTOR CONTROLLER')"></button>
+      </div>
+    </div>
+    <div class="parent" id="parent_layout">
+      <div class="div2" id="tab_div">
+        <menu role="tablist">
+          <li role="tab" aria-selected="true" id="input_tab"><a href="#input" onclick="inputTab();">Input Profile</a></li>
+          <li role="tab" id="control_tab"><a href="#control_panel" onclick="controlPanelTab();">Control Panel</a></li>
+          <!--<li role="tab" disabled="true" id="data_panel_tab"><a href="#tabs">Data Panel</a></li>-->
+        </menu>
+        <div class="window" role="tabpanel" id="tab_window">
+          <div class="window-body" id="tab_window_body">
+            <div id="side_box"  class="zoom-frame">
+              <textarea id="input_profile" class="input-area" spellcheck="false" onchange="updateChart()">
+0MS, 0G
+2300MS, 4G
+2600MS, 5G
+3000MS, 2G
+7000MS, 8G
+8000MS, 1G
+9000MS, 0G</textarea>
+              <div id="control_panel">
+                <button class="startButton" onclick="start();">
+                  START
+                </button>
+                <button class="stopButton" onclick="upload();">
+                  UPLOAD
+                </button>
+                <button class="stopButton" onclick="stop();">
+                  STOP
+                </button>
+                <button class="dataButton" onclick="dataGet();">
+                  DATUM
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="div3" id="video_div">
+        <canvas id="graph_canvas" class="zoom-frame"></canvas>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src = "static/index.js"></script> 
+  </body>
+</html>
