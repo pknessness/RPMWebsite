@@ -1,28 +1,60 @@
 
 const ctx = document.getElementById('graph_canvas');
-const textIn = document.getElementById("input_profile");
+const param1 = document.getElementById("param1");
 const controlPanel = document.getElementById("control_panel");
 
 const tabInput = document.getElementById("input_tab");
 const tabControlPanel = document.getElementById("control_tab");
 
+const xyz_check = document.getElementById("xyz");
+const eff_check = document.getElementById("effective");
+const inst_check = document.getElementById("instantaneous");
+
 let startOrStop = false;
 let continueInterval;
 
+let pointCount = 0;
+
 const data = {
   datasets: [{
-    label: 'Profile',
+    label: 'Accel.x',
     data: [],
     fill: false,
-    borderColor: 'rgb(75, 192, 192)',
-    tension: 0.1
+    borderColor: 'rgb(220, 32, 52)',
+    tension: 0.1,
+    pointStyle: false
   },
   {
-    label: 'Expected',
+    label: 'Accel.y',
     data: [],
     fill: false,
-    borderColor: 'rgb(22, 150, 200)',
-    tension: 0.1
+    borderColor: 'rgb(52, 220, 32)',
+    tension: 0.1,
+    pointStyle: false
+  },
+  {
+    label: 'Accel.z',
+    data: [],
+    fill: false,
+    borderColor: 'rgb(32, 52, 220)',
+    tension: 0.1,
+    pointStyle: false
+  },
+  {
+    label: 'Effective Accel',
+    data: [],
+    fill: false,
+    borderColor: 'rgb(190, 70, 200)',
+    tension: 0.1,
+    pointStyle: false
+  },
+  {
+    label: 'Instantaneous Accel',
+    data: [],
+    fill: false,
+    borderColor: 'rgb(200, 190, 70)',
+    tension: 0.1,
+    pointStyle: false
   }]
 };
 
@@ -36,7 +68,7 @@ const config = {
             y: {
                 ticks: {
                     callback: function(value, index, ticks) {
-                        return `${value}G`;
+                        return `${value}m/s²`;
                     }
                 }
             },
@@ -44,7 +76,7 @@ const config = {
 				type: 'linear',
                 ticks: {
                     callback: function(value, index, ticks) {
-                        return `${value}ms`;
+                        return `${value}_`;
                     }
                 }
             }
@@ -71,31 +103,19 @@ function parseAndMap(str) {
     return map;
   }*/
 
-function updateChart(){
-	var lines = textIn.value.replaceAll(" ","").split("\n");
-	myChart.data.datasets[0].data = []
-	for(var i = 0; i < lines.length; i ++){
-		//console.log(`lines ${lines[i]}`);
-		var split = lines[i].split(",");
-		//console.log(split);
-		if(!split[0].endsWith("MS") | !split[1].endsWith("G")) break;
-		var ms = split[0].split("MS")[0];
-		var g = split[1].split("G")[0];
-		//console.log("AAA",ms,g);
-		myChart.data.datasets[0].data.push({x: ms, y: g});
-	}
-	myChart.update();
+function updateParams(){
+  
 }
-updateChart();
+updateParams();
 
 function inputTab(){
-	textIn.hidden = false;
+	param1.hidden = false;
 	controlPanel.hidden = true;
 	tabInput.setAttribute('aria-selected','true');
 	tabControlPanel.setAttribute('aria-selected','false');
 }
 function controlPanelTab(){
-	textIn.hidden = true;
+	param1.hidden = true;
 	controlPanel.hidden = false;
 	tabInput.setAttribute('aria-selected','false');
 	tabControlPanel.setAttribute('aria-selected','true');
@@ -120,8 +140,10 @@ function start(){
 		console.log(data);
 	});
 	startOrStop = true;
-	myChart.data.datasets[1].data = [];
-	continueInterval = setInterval(dataGet, 2000);
+	//myChart.data.datasets[1].data = [];
+	dataReset();
+	pointCount = 0;
+	continueInterval = setInterval(dataGet, 1000);
 	
 }
 
@@ -181,29 +203,70 @@ function dataGet(){
 		console.log(data);
 		//myChart.data.datasets[1].data = [];
 		//sort!! with js data
-		let text = data['status'];
+		let text = data['status'].replace("+","").replace("#","");
+		let values = text.split("=");
+		let accel = Math.sqrt(parseFloat(values[0])*parseFloat(values[0]) + parseFloat(values[1])*parseFloat(values[1]) + parseFloat(values[2])*parseFloat(values[2]));
+		myChart.data.datasets[0].data.push({x: pointCount, y: parseFloat(values[0])});
+		myChart.data.datasets[1].data.push({x: pointCount, y: parseFloat(values[1])});
+		myChart.data.datasets[2].data.push({x: pointCount, y: parseFloat(values[2])});
 		
-		let lines = text.split('g');
-		//let doubleArray = lines.map(Number);
-		let map = new Map();
-		for (let i = 0; i < 10; i += 1){
-		    //console.log(myChart.data.datasets[1].data);
-		    //myChart.data.datasets[1].data.push({x: doubleArray[i], y: doubleArray[i+1]});
-		    //if(i+1 < doubleArray.length){
-		    let smallerChunk = lines[i].split('ms');
-		    map.set(parseFloat(smallerChunk[0]), parseFloat(smallerChunk[1]));
-		    //}
+		myChart.data.datasets[4].data.push({x: pointCount, y: accel});
+		
+		let avg = [0,0,0];
+		for(let i = 0; i < pointCount+1; i ++){
+		    avg[0] += myChart.data.datasets[0].data[i].y;
+		    avg[1] += myChart.data.datasets[1].data[i].y;
+		    avg[2] += myChart.data.datasets[2].data[i].y;
+		    
 		}
-		let sortedMap = new Map([...map.entries()].sort((a, b) => a[0] - b[0]));
-		for(let [key, value] of sortedMap.entries()){
-		  myChart.data.datasets[1].data.push({x: key, y: value});
-		  console.log({x: key, y: value});
-
+		console.log(avg);
+		
+		let averg = Math.sqrt(
+		Math.pow(avg[0]/(pointCount+1),2) + 
+		Math.pow(avg[1]/(pointCount+1),2) +
+		Math.pow(avg[2]/(pointCount+1),2));
+		
+		if(pointCount < 100 || (pointCount < 1000 && pointCount % 10 == 0) || (pointCount % 50 == 0)){
+		  myChart.data.datasets[3].data.push({x: pointCount, y: averg});
 		}
+		//myChart.data.datasets[3].data.push({x: pointCount, y: averg});
+		
+		document.getElementById("x_r").innerHTML = "Acceleration X:" + parseFloat(values[0]);
+		document.getElementById("y_r").innerHTML = "Acceleration Y:" + parseFloat(values[1]);
+		document.getElementById("z_r").innerHTML = "Acceleration Z:" + parseFloat(values[2]);
+		
+		document.getElementById("inst_r").innerHTML = "Instantaneous Accel:" + accel;
+		document.getElementById("eff_r").innerHTML = "Effective Accel:" + averg;
+		
+		document.getElementById("a_r").innerHTML = "Encoder A:" + parseFloat(values[3]);
+		document.getElementById("b_r").innerHTML = "Encoder B:" + parseFloat(values[4]);
+		
+		
+		pointCount++;
 		myChart.update();
 		
 	});
 	
   }
- 
   
+function dataReset(){
+  myChart.data.datasets[0].data = [];
+  myChart.data.datasets[1].data = [];
+  myChart.data.datasets[2].data = [];
+  myChart.data.datasets[3].data = [];
+  myChart.data.datasets[4].data = [];
+  myChart.update();
+}
+ 
+function linesUpdate(){
+  console.log("clicked");
+  myChart.data.datasets[0].hidden = !xyz_check.checked;
+  myChart.data.datasets[1].hidden = !xyz_check.checked;
+  myChart.data.datasets[2].hidden = !xyz_check.checked;
+  myChart.data.datasets[3].hidden = !eff_check.checked;
+  myChart.data.datasets[4].hidden = !inst_check.checked;
+		
+  myChart.update();
+}
+  
+linesUpdate();

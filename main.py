@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 import serial.tools.list_ports
 import serial
 import time
+from datetime import datetime
 
 termiosBullshit = 1
 
@@ -26,6 +27,17 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 ports = []
+
+filename = "NO_PROFILE";
+
+def newFile():
+    global filename;
+    now = datetime.now()
+    filename = "logs/log_"+now.strftime("%d-%m-%Y_%H:%M:%S");
+    
+def writeFile(text):
+    f = open(filename + ".csv", "a");
+    f.write(text);
 
 @app.get("/")
 def get_root():
@@ -98,7 +110,7 @@ def writeRead(writeString):
         ser.write(writeString.encode('utf-8'))
     except Exception as e:
         return e
-    time.sleep(1)
+    time.sleep(0.2)
     try:
         print("Attempting read from Arduino:")
         by = ser.inWaiting()
@@ -111,25 +123,27 @@ def writeRead(writeString):
     return response
     
 def start(): 
-    response = writeRead("START;");
-    if(isinstance(response,Exception)): return response;
-    return response;
-
-def upload(data):
-    #response = writeRead("UPLOAD;");
-    #if(isinstance(response,Exception)): return response;
-    response = writeRead("UPLOAD; "+ data + ';');
+    response = writeRead("a");
+    newFile();
+    writeFile("accel_x,accel_y,accel_z,encoder_a,encoder_b\n");
     if(isinstance(response,Exception)): return response;
     return response;
 
 def stop(): 
-    response = writeRead("STOP;");
+    response = writeRead("r");
+    filename = "NO_PROFILE";
     if(isinstance(response,Exception)): return response;
     return response;
     
 def request_data(): 
-    response = writeRead("REQUEST_DATA;");
-    if(isinstance(response,Exception)): return response;
+    response = writeRead("d");
+    if(isinstance(response,Exception)):
+        writeFile(str(response)+"\n");
+        return response;
+    else:
+        text = response.replace("+","").replace("#","").replace("==","=");
+        values = text.split("=");
+        writeFile(f"{values[0]},{values[1]},{values[2]},{values[3]},{values[4]}\n");
     return response;
 
 @app.post("/commands")
